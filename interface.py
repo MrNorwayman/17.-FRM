@@ -20,15 +20,15 @@ curva_rpm_max = np.array([
     [12392.44, 0, 1800, 2149.38]
 ])
 curva_rpm_max_2 = np.array([
-    [10605.45, 340.28, 1105, 3666,27],
-    [11812.19, 296.56, 1105, 3666,27],
-    [14336.78, 281.58, 1105, 3666,27],
-    [16981.32, 255.66, 1105, 3666,27],
-    [18970.7, 226.26, 1105, 3666,27],
-    [21131.28, 190.16, 1105, 3666,27],
-    [23405.1, 141.18, 1105, 3666,27],
-    [26188.91, 340.28, 1105, 3666,27],
-    [28911.25, 340.28, 1105, 3666,27]
+    [10605.45, 340.28, 1105, 3666.27],
+    [11812.19, 296.56, 1105, 3332.06],
+    [14336.78, 281.58, 1105, 3342.18],
+    [16981.32, 255.66, 1105, 2870.25],
+    [18970.7, 226.26, 1105, 2792.89],
+    [21131.28, 190.16, 1105, 2695.64],
+    [23405.1, 141.18, 1105, 2541.19],
+    [26188.91, 70.68, 1105, 2315.32],
+    [28911.25, 0, 1105, 2042.91]
 ])
 
 curva_simulada = []
@@ -90,10 +90,10 @@ class Interfaz(ctk.CTk):
         self.label_Ws.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
         # Texto y entrada para el consumo disponible
-        subgrid_W_disponible = ctk.CTkFrame(grid_botones, corner_radius=17)
-        subgrid_W_disponible.grid(row=4, column=0, padx=7, pady=7, sticky="nsew")
-        self.label_W_disponible = ctk.CTkLabel(subgrid_W_disponible, text="Consumo disponible [W]", font=("Helvetica", 20), corner_radius=10)
-        self.label_W_disponible.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
+        subgrid_W_mecanica = ctk.CTkFrame(grid_botones, corner_radius=17)
+        subgrid_W_mecanica.grid(row=4, column=0, padx=7, pady=7, sticky="nsew")
+        self.label_W_mecanica = ctk.CTkLabel(subgrid_W_mecanica, text="Potencia Mecánica [W]", font=("Helvetica", 20), corner_radius=10)
+        self.label_W_mecanica.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
         # Texto y entrada para el rendimiento
         subgrid_rend = ctk.CTkFrame(grid_botones, corner_radius=17)
@@ -139,8 +139,7 @@ class Interfaz(ctk.CTk):
     ## CONFIGURACION DE GRAFICA ACABAR ##
 
     ## CURVAS DE GRAFICA INICIO ##
-        f_correc = f_grafics.interpolar_factor_correccion(f_grafics.factor_correccion_radial)
-
+        self.m_correc = f_grafics.interpolar_factor_correccion(f_grafics.factor_correccion_radial)
         self.q_i, self.ps_i, self.N_i, self.Ws_i = f_grafics.extraer_datos(curva_rpm_max)
         self.ax.plot(self.q_i, self.ps_i, 'g-', linewidth=1.5)
         self.ax_sub.plot(self.q_i, self.Ws_i, 'g-', linewidth=1.5)
@@ -229,12 +228,14 @@ class Interfaz(ctk.CTk):
         self.label_ps.configure(text=f"Presión disponible [Pa]: {punto_curva[1]:.2f}")
         self.N_corte = np.interp(punto_curva[0], self.q_new_Nc, self.N_new_c)
         self.label_n.configure(text=f"Revoluciones [rpm]: {self.N_corte:.2f}")
-        self.Ws_corte = np.interp(punto_curva[0], self.q_new_Nc, self.Ws_new_c)
+        print(int(punto_curva[0]/max(self.q_i)*100), int(punto_curva[1]/max(self.ps_i)*100))
+        print(self.m_correc[int(punto_curva[0]/max(self.q_i)*100)][int(punto_curva[1]/max(self.ps_i)*100)])
+        self.Ws_corte = np.interp(punto_curva[0], self.q_new_Nc, self.Ws_new_c) * self.m_correc[int(punto_curva[0]/max(self.q_i)*100)][int(punto_curva[1]/max(self.ps_i)*100)]
         self.label_Ws.configure(text=f"Consumo [W]: {self.Ws_corte:.2f}")
 
-        self.W_disponible = punto_curva[0] * punto_curva[1] / 3600
-        self.label_W_disponible.configure(text=f"Consumo disponible [W]: {self.W_disponible:.2f}")
-        self.rend_calculado = self.W_disponible / self.Ws_corte * 100
+        self.W_mecanica = punto_curva[0] * punto_curva[1] / 3600
+        self.label_W_mecanica.configure(text=f"Potencia Mecánica [W]: {self.W_mecanica:.2f}")
+        self.rend_calculado = self.W_mecanica / self.Ws_corte * 100
         self.label_rend.configure(text=f"Rendimiento [%]: {self.rend_calculado:.2f}")
 
 if __name__ == "__main__":

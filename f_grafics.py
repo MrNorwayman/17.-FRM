@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
-# LAS MATRICES ESTAN TODAS REFLEJADAS !!!!!!
-factor_correccion_radial= np.array([[100,   100,    100,    100,    100, 100, 100, 100, 100, 100],
+# LAS MATRICES ESTAN TODAS REFLEJADAS !!!!!! añadir la funcion rotar
+factor_correccion_radial= np.array([[100,   100,    100,    100,    100, 100, 100, 100, 100, 333330],
                                     [100,   100,    100,    100,    100, 100, 100, 100, 100, 100],
                                     [100,   100,    100,    100,    100, 100, 100, 100, 100, 100],
                                     [100,   100,    100,    100,    100, 100, 100, 100, 100, 100],
@@ -10,16 +10,30 @@ factor_correccion_radial= np.array([[100,   100,    100,    100,    100, 100, 10
                                     [100,   100,    10,     10,     100, 100, 100, 100, 100, 100],
                                     [100,   100,    10,     10,     100, 100, 100, 100, 100, 100],
                                     [100,   100,    100,    0,      100, 100, 100, 100, 100, 100],
-                                    [110,    0,      10,     100,    100, 100, 100, 100, 100, 100],
-                                    [210,   100,    100,    100,    100, 100, 100, 100, 100, 100]
+                                    [110,    0,      10,     100,   100, 100, 100, 100, 100, 100],
+                                    [2200,   100,    100,    100,    100, 100, 100, 100, 100, 200]
                                     ])
+factor_correccion_radial = np.rot90(factor_correccion_radial, 3)
+
+factor_correccion_axial = np.array([[100,   100,    100,    100,    100, 100, 100, 100, 100, 100],
+                                    [100,   100,    100,    100,    100, 100, 100, 100, 100, 100],
+                                    [100,   100,    100,    100,    100, 100, 100, 100, 100, 100],
+                                    [100,   100,    100,    100,    100, 100, 100, 100, 100, 100],
+                                    [100,   100,    10,     10,     100, 100, 100, 100, 100, 100],
+                                    [100,   100,    10,     10,     100, 100, 100, 100, 100, 100],
+                                    [100,   100,    10,     10,     100, 100, 100, 100, 100, 100],
+                                    [100,   100,    100,    0,      100, 100, 100, 100, 100, 100],
+                                    [110,    0,      10,     100,   100, 100, 100, 100, 100, 100],
+                                    [100,   100,    100,    100,    100, 100, 100, 100, 100, 200]
+                                    ])
+factor_correccion_axial = np.rot90(factor_correccion_axial, 3)
 
 def interpolar_factor_correccion(matriz, num_puntos=100):
     # Crear los puntos de la cuadrícula original
     x = np.arange(0, matriz.shape[1])
     y = np.arange(0, matriz.shape[0])
     # Crear la función de interpolación
-    interpolador = RegularGridInterpolator((y, x), matriz, method='cubic')
+    interpolador = RegularGridInterpolator((y, x), matriz, method='linear')
     # Crear los nuevos puntos de la cuadrícula para la interpolación
     x_new = np.linspace(0, matriz.shape[1] - 1, num_puntos)
     y_new = np.linspace(0, matriz.shape[0] - 1, num_puntos)
@@ -30,7 +44,7 @@ def interpolar_factor_correccion(matriz, num_puntos=100):
     return matriz_interpolada
 
 
-def calcular_puntos_intermedios(x_i, y_i, num_puntos=5000, orden=4):
+def calcular_puntos_intermedios(x_i, y_i, num_puntos=5000, orden=5):
     coeficientes = np.polyfit(x_i, y_i, orden)
     polinomio = np.poly1d(coeficientes)
     # Generar puntos intermedios
