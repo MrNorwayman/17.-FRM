@@ -2,20 +2,35 @@ import customtkinter as ctk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
+import matplotlib.lines as lines
 import f_grafics
 
 ## VARIABLES GENERALES INICIO ##
 punto_curva = [500, 300]
-curva_rpm_max = [[104.52, 1210.18, 1800, 1073.45], 
-                 [1687.54, 1167.32, 1800, 1685.65], 
-                 [3231.27, 1135.05, 1800, 2243.06],
-                 [4823, 1083.77, 1800, 2640.73],
-                 [6400.31, 1003.43, 1800, 2938.24],
-                 [7765.3, 877.02, 1800, 3040.93],
-                 [9292.04, 670.09, 1800, 2914.37],
-                 [10419.25, 469.44, 1800, 2888.45], 
-                 [11441.17, 244.1, 1800, 2564.21],
-                 [12392.44, 0, 1800, 2149.38]]
+curva_rpm_max = np.array([
+    [104.52, 1210.18, 1800, 1073.45], 
+    [1687.54, 1167.32, 1800, 1685.65], 
+    [3231.27, 1135.05, 1800, 2243.06],
+    [4823, 1083.77, 1800, 2640.73],
+    [6400.31, 1003.43, 1800, 2938.24],
+    [7765.3, 877.02, 1800, 3040.93],
+    [9292.04, 670.09, 1800, 2914.37],
+    [10419.25, 469.44, 1800, 2888.45], 
+    [11441.17, 244.1, 1800, 2564.21],
+    [12392.44, 0, 1800, 2149.38]
+])
+curva_rpm_max_2 = np.array([
+    [10605.45, 340.28, 1105, 3666,27],
+    [11812.19, 296.56, 1105, 3666,27],
+    [14336.78, 281.58, 1105, 3666,27],
+    [16981.32, 255.66, 1105, 3666,27],
+    [18970.7, 226.26, 1105, 3666,27],
+    [21131.28, 190.16, 1105, 3666,27],
+    [23405.1, 141.18, 1105, 3666,27],
+    [26188.91, 340.28, 1105, 3666,27],
+    [28911.25, 340.28, 1105, 3666,27]
+])
+
 curva_simulada = []
 ## VARIABLES GENERALES ACABAR ##
 
@@ -43,9 +58,10 @@ class Interfaz(ctk.CTk):
         grid_botones.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         # Configurar el grid dentro del grid_botones
         grid_botones.grid_columnconfigure(0, weight=1)
-        for i in range(2):
+        for i in range(6):
             grid_botones.grid_rowconfigure(i, weight=1)
 
+        # Texto y entrada para el caudal
         subgrid_q = ctk.CTkFrame(grid_botones, corner_radius=17)
         subgrid_q.grid(row=0, column=0, padx=7, pady=7, sticky="nsew")
         self.label_q = ctk.CTkLabel(subgrid_q, text="Caudal [m^3/h]", font=("Helvetica", 20), corner_radius=10)
@@ -53,6 +69,7 @@ class Interfaz(ctk.CTk):
         self.entry_q = ctk.CTkEntry(subgrid_q, placeholder_text="Establece Caudal", width=150, height=50, corner_radius=15)
         self.entry_q.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
 
+        # Texto y entrada para la presión disponible
         subgrid_ps = ctk.CTkFrame(grid_botones, corner_radius=17)
         subgrid_ps.grid(row=1, column=0, padx=7, pady=7, sticky="nsew")
         self.label_ps = ctk.CTkLabel(subgrid_ps, text="Presión disponible", font=("Helvetica", 20), corner_radius=10)
@@ -60,11 +77,29 @@ class Interfaz(ctk.CTk):
         self.entry_ps = ctk.CTkEntry(subgrid_ps, placeholder_text="Establece Presión", width=150, height=50, corner_radius=15)
         self.entry_ps.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
 
+        # Texto y entrada para las revoluciones
         subgrid_n = ctk.CTkFrame(grid_botones, corner_radius=17)
         subgrid_n.grid(row=2, column=0, padx=7, pady=7, sticky="nsew")
         self.label_n = ctk.CTkLabel(subgrid_n, text="Revoluciones", font=("Helvetica", 20), corner_radius=10)
         self.label_n.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
+        # Texto y entrada para el consumo
+        subgrid_Ws = ctk.CTkFrame(grid_botones, corner_radius=17)
+        subgrid_Ws.grid(row=3, column=0, padx=7, pady=7, sticky="nsew")
+        self.label_Ws = ctk.CTkLabel(subgrid_Ws, text="Consumo", font=("Helvetica", 20), corner_radius=10)
+        self.label_Ws.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
+
+        # Texto y entrada para el consumo disponible
+        subgrid_W_disponible = ctk.CTkFrame(grid_botones, corner_radius=17)
+        subgrid_W_disponible.grid(row=4, column=0, padx=7, pady=7, sticky="nsew")
+        self.label_W_disponible = ctk.CTkLabel(subgrid_W_disponible, text="Consumo disponible [W]", font=("Helvetica", 20), corner_radius=10)
+        self.label_W_disponible.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
+
+        # Texto y entrada para el rendimiento
+        subgrid_rend = ctk.CTkFrame(grid_botones, corner_radius=17)
+        subgrid_rend.grid(row=5, column=0, padx=7, pady=7, sticky="nsew")
+        self.label_rend = ctk.CTkLabel(subgrid_rend, text="Rendimiento [%]", font=("Helvetica", 20), corner_radius=10)
+        self.label_rend.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
     ## CONFIGURACION DE GRAFICA INICIO ##
         # Crear la figura de matplotlib con fondo oscuro
@@ -96,12 +131,19 @@ class Interfaz(ctk.CTk):
         # Curva de trabajo
         qt, pst = f_grafics.calcular_curva_trabajo(punto_curva)
         self.curva_t, = self.ax.plot(qt, pst, 'k-', linewidth=0.5)
-
+        # Curva work
+        self.vertical_line = lines.Line2D([punto_curva[0], punto_curva[0]], [0, 1], transform=self.ax.get_xaxis_transform(), color='g', linewidth=0.5)
+        self.ax.add_line(self.vertical_line)
+        self.vertical_line_sub = lines.Line2D([punto_curva[0], punto_curva[0]], [0, 1], transform=self.ax_sub.get_xaxis_transform(), color='g', linewidth=0.5)
+        self.ax_sub.add_line(self.vertical_line_sub)
     ## CONFIGURACION DE GRAFICA ACABAR ##
 
     ## CURVAS DE GRAFICA INICIO ##
+        f_correc = f_grafics.interpolar_factor_correccion(f_grafics.factor_correccion_radial)
+
         self.q_i, self.ps_i, self.N_i, self.Ws_i = f_grafics.extraer_datos(curva_rpm_max)
         self.ax.plot(self.q_i, self.ps_i, 'g-', linewidth=1.5)
+        self.ax_sub.plot(self.q_i, self.Ws_i, 'g-', linewidth=1.5)
 
         self.q, self.ps = f_grafics.calcular_puntos_intermedios(self.q_i, self.ps_i)
         self.curva_n, = self.ax.plot(self.q, self.ps, 'r-', linewidth=1)
@@ -113,6 +155,8 @@ class Interfaz(ctk.CTk):
         self.ax_sub.plot(self.q, self.Ws, 'b-', linewidth=1)
         self.ax_sub.set_xlim(0, max(self.q)*1.05)
         self.ax_sub.set_ylim(0, max(self.Ws)*1.05)
+
+        self.q, self.N = f_grafics.calcular_puntos_intermedios(self.q_i, self.N_i)
     ## CURVAS DE GRAFICA ACABAR ##
 
         # Integrar la figura en el widget de Tkinter con bordes redondeados
@@ -127,6 +171,7 @@ class Interfaz(ctk.CTk):
         self.text_box.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=10)
 
     ## MOVER PUNTO CURVA DE MONTAJE INICIO ##
+    
         # Variables para controlar el estado del clic
         self.dragging = False
         # Conectar los eventos de clic y movimiento del ratón
@@ -152,36 +197,45 @@ class Interfaz(ctk.CTk):
                 ps = float(self.entry_ps.get())
 
             self.x[0], self.y[0] = q, ps  # Mover solo el primer punto
-            self.sc.set_offsets(list(zip(self.x, self.y)))
-            punto_curva[0], punto_curva[1] = q, ps
+            punto_curva[0], punto_curva[1] = q, ps # Mover curva work
+            self.sc.set_offsets(np.column_stack((self.x, self.y)))
             qt, pst = f_grafics.calcular_curva_trabajo(punto_curva) # Calcular la curva de trabajo
-            self.curva_t.remove() # Eliminar la curva de trabajo anterior
-            self.curva_t, = self.ax.plot(qt, pst, 'k-', linewidth=0.5)  # Graficar la nueva curva de trabajo
-            self.canvas.draw_idle() # Actualizar la gráfica
+            self.curva_t.set_data(qt, pst)  # Graficar la nueva curva de trabajo
+
             # Calcular y graficar el punto de intersección
             intersections = f_grafics.find_intersection(qt, pst, self.q, self.ps)   # Encontrar la intersección
-            intersections = [list(inter) for inter in intersections]  # Convertir a lista
+
             if intersections:
                 f_q = punto_curva[0] / intersections[0][0]  # Factor de escala
                 if f_q <= 1:
-                    self.q_new, self.ps_new, self.N_new, self.Ws_new = f_grafics.crear_nueva_curva(self.q, self.ps, self.N_i, self.Ws, f_q, f_q**2, f_q, f_q**3)  # Crear la nueva curva
-                    q_new_c, ps_new_c = f_grafics.calcular_puntos_intermedios(self.q_new, self.ps_new) # Calcular los puntos intermedios
-                    q_new_Wc, Ws_new_c = f_grafics.calcular_puntos_intermedios(self.q_new, self.Ws_new) # Calcular los puntos intermedios
+                    self.q_new, self.ps_new, self.N_new, self.Ws_new = f_grafics.crear_nueva_curva(self.q, self.ps, self.N, self.Ws, f_q, f_q**2, f_q, f_q**3)  # Crear la nueva curva
+                    self.q_new_c, self.ps_new_c = f_grafics.calcular_puntos_intermedios(self.q_new, self.ps_new) # Calcular los puntos intermedios
+                    self.q_new_Nc, self.N_new_c = f_grafics.calcular_puntos_intermedios(self.q_new, self.N_new) # Calcular los puntos intermedios
+                    self.q_new_Wc, self.Ws_new_c = f_grafics.calcular_puntos_intermedios(self.q_new, self.Ws_new) # Calcular los puntos intermedios
                     self.actualizar_texto()
                     if self.band_1 == 0:
-                        self.curva_n_new, = self.ax.plot(q_new_c, ps_new_c, 'r-', linewidth=0.5)
-                        self.curva_Wn_new, = self.ax_sub.plot(q_new_Wc, Ws_new_c, 'b-', linewidth=0.5)
+                        self.curva_n_new, = self.ax.plot(self.q_new_c, self.ps_new_c, 'r-', linewidth=0.5)
+                        self.curva_Wn_new, = self.ax_sub.plot(self.q_new_Wc, self.Ws_new_c, 'b-', linewidth=0.5)
                         self.band_1 = 1
-                    self.curva_n_new.remove()
-                    self.curva_Wn_new.remove()
-                    self.curva_n_new, = self.ax.plot(q_new_c, ps_new_c, 'r-', linewidth=0.5)
-                    self.curva_Wn_new, = self.ax_sub.plot(q_new_Wc, Ws_new_c, 'b-', linewidth=0.5)
+                    self.curva_n_new.set_data(self.q_new_c, self.ps_new_c)
+                    self.curva_Wn_new.set_data(self.q_new_Wc, self.Ws_new_c)
+                    self.vertical_line.set_xdata([q, q])
+                    self.vertical_line_sub.set_xdata([q, q])
+                                
+                    self.canvas.draw_idle() # Actualizar la gráfica     
                     
-
     def actualizar_texto(self):
         self.label_q.configure(text=f"Caudal [m^3/h]: {punto_curva[0]:.2f}")
         self.label_ps.configure(text=f"Presión disponible [Pa]: {punto_curva[1]:.2f}")
-        self.label_n.configure(text=f"Revoluciones [rpm]: {self.N_new[0]:.2f}")
+        self.N_corte = np.interp(punto_curva[0], self.q_new_Nc, self.N_new_c)
+        self.label_n.configure(text=f"Revoluciones [rpm]: {self.N_corte:.2f}")
+        self.Ws_corte = np.interp(punto_curva[0], self.q_new_Nc, self.Ws_new_c)
+        self.label_Ws.configure(text=f"Consumo [W]: {self.Ws_corte:.2f}")
+
+        self.W_disponible = punto_curva[0] * punto_curva[1] / 3600
+        self.label_W_disponible.configure(text=f"Consumo disponible [W]: {self.W_disponible:.2f}")
+        self.rend_calculado = self.W_disponible / self.Ws_corte * 100
+        self.label_rend.configure(text=f"Rendimiento [%]: {self.rend_calculado:.2f}")
 
 if __name__ == "__main__":
     app = Interfaz()
