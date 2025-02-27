@@ -34,10 +34,21 @@ curva_rpm_max_2 = np.array([
 curva_simulada = []
 ## VARIABLES GENERALES ACABAR ##
 
+## VENTANA DE ELECCION VENTILADOR INICIO ##
+class Informacion(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Configuración")
+        self.geometry("400x300")
+        self.minsize(800, 400)
+
+## VENTANA DE ELECCION VENTILADOR ACABAR ##
+
 ## INTERFAZ INICIO ##
 class Interfaz(ctk.CTk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.toplevel_window = None
         # Configurar el tema y la apariencia de customtkinter
         ctk.set_appearance_mode("dark")  # Opciones: "light", "dark"
         ctk.set_default_color_theme("blue")  # Cambia el tema de color
@@ -51,9 +62,11 @@ class Interfaz(ctk.CTk):
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=5)
         self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_rowconfigure(2, weight=0)
 
         # Crear un Frame para el subgrid
-        grid_botones = ctk.CTkFrame(self, corner_radius=20)
+        grid_botones = ctk.CTkFrame(self, corner_radius=10)
         grid_botones.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         # Configurar el grid dentro del grid_botones
         grid_botones.grid_columnconfigure(0, weight=0)
@@ -61,57 +74,52 @@ class Interfaz(ctk.CTk):
             grid_botones.grid_rowconfigure(i, weight=0)
 
         # Texto y entrada para el caudal
-        subgrid_q = ctk.CTkFrame(grid_botones, corner_radius=17)
+        subgrid_q = ctk.CTkFrame(grid_botones)
         subgrid_q.grid(row=0, column=0, padx=7, pady=7, sticky="nsew")
-        self.label_q = ctk.CTkLabel(subgrid_q, text="Caudal : 00000.00[m^3/h]", font=("Helvetica", 20), corner_radius=10, width=350, anchor='w')
+        self.label_q = ctk.CTkLabel(subgrid_q, text="Caudal [m^3/h]: 00000.00", font=("Helvetica", 20), width=350, anchor='w')
         self.label_q.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
-        self.entry_q = ctk.CTkEntry(subgrid_q, placeholder_text="Establece Caudal[m^3/h]", width=150, height=50, corner_radius=15)
-        self.entry_q.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
+        self.entry_q = ctk.CTkEntry(subgrid_q, placeholder_text="Establece Caudal [m^3/h]", width=150, height=30)
+        self.entry_q.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
 
         # Texto y entrada para la presión disponible
-        subgrid_ps = ctk.CTkFrame(grid_botones, corner_radius=17)
+        subgrid_ps = ctk.CTkFrame(grid_botones)
         subgrid_ps.grid(row=1, column=0, padx=7, pady=7, sticky="nsew")
-        self.label_ps = ctk.CTkLabel(subgrid_ps, text="Presión disponible: 00000.00[Pa]", font=("Helvetica", 20), corner_radius=10, width=350, anchor='w')
+        self.label_ps = ctk.CTkLabel(subgrid_ps, text="Presión disponible [Pa]: 00000.00", font=("Helvetica", 20), width=350, anchor='w')
         self.label_ps.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
-        self.entry_ps = ctk.CTkEntry(subgrid_ps, placeholder_text="Establece Presión[Pa]", width=150, height=50, corner_radius=15)
-        self.entry_ps.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
+        self.entry_ps = ctk.CTkEntry(subgrid_ps, placeholder_text="Establece Presión [Pa]", width=150, height=30)
+        self.entry_ps.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
 
         # Texto y entrada para las revoluciones
-        subgrid_n = ctk.CTkFrame(grid_botones, corner_radius=17)
+        subgrid_n = ctk.CTkFrame(grid_botones)
         subgrid_n.grid(row=2, column=0, padx=7, pady=7, sticky="nsew")
-        self.label_n = ctk.CTkLabel(subgrid_n, text="Revoluciones: 00000.00[rpm]", font=("Helvetica", 20), corner_radius=10, width=350, anchor='w')
+        self.label_n = ctk.CTkLabel(subgrid_n, text="Revoluciones [rpm]: 00000.00", font=("Helvetica", 20), width=350, anchor='w')
         self.label_n.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
         # Texto y entrada para el consumo
-        subgrid_Ws = ctk.CTkFrame(grid_botones, corner_radius=17)
+        subgrid_Ws = ctk.CTkFrame(grid_botones)
         subgrid_Ws.grid(row=3, column=0, padx=7, pady=7, sticky="nsew")
-        self.label_Ws = ctk.CTkLabel(subgrid_Ws, text="Consumo: 00000.00[W]", font=("Helvetica", 20), corner_radius=10, width=350, anchor='w')
+        self.label_Ws = ctk.CTkLabel(subgrid_Ws, text="Consumo [W]: 00000.00", font=("Helvetica", 20), width=350, anchor='w')
         self.label_Ws.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
         # Texto y entrada para el consumo disponible
-        subgrid_W_mecanica = ctk.CTkFrame(grid_botones, corner_radius=17)
+        subgrid_W_mecanica = ctk.CTkFrame(grid_botones)
         subgrid_W_mecanica.grid(row=4, column=0, padx=7, pady=7, sticky="nsew")
-        self.label_W_mecanica = ctk.CTkLabel(subgrid_W_mecanica, text="Potencia Mecánica: 00000.00[W]", font=("Helvetica", 20), corner_radius=10, width=350, anchor='w')
+        self.label_W_mecanica = ctk.CTkLabel(subgrid_W_mecanica, text="Potencia Mecánica [W]: 00000.00", font=("Helvetica", 20), width=350, anchor='w')
         self.label_W_mecanica.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
         # Texto y entrada para el rendimiento
-        subgrid_rend = ctk.CTkFrame(grid_botones, corner_radius=17)
+        subgrid_rend = ctk.CTkFrame(grid_botones)
         subgrid_rend.grid(row=5, column=0, padx=7, pady=7, sticky="nsew")
-        self.label_rend = ctk.CTkLabel(subgrid_rend, text="Rendimiento: 000.00[%]", font=("Helvetica", 20), corner_radius=10, width=250, anchor='w')
+        self.label_rend = ctk.CTkLabel(subgrid_rend, text="Rendimiento [%]: 000.00", font=("Helvetica", 20), width=250, anchor='w')
         self.label_rend.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
-        # Texto y entrada para el rendimiento nominal
-        subgrid_rend_nominal = ctk.CTkFrame(grid_botones, corner_radius=17)
-        subgrid_rend_nominal.grid(row=6, column=0, padx=7, pady=7, sticky="nsew")
-        self.label_rend_nominal = ctk.CTkLabel(subgrid_rend_nominal, text="Rendimiento nominal: 000.00[%]", font=("Helvetica", 20), corner_radius=10, width=250, anchor='w')
-        self.label_rend_nominal.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
+    ## CREACION DE BOTONES INICIO ##
+        self.b_abrir_conf = ctk.CTkButton(self, text="Configuración", command=self.open_toplevel, height=50)
+        self.b_abrir_conf.grid(row=1, column=0, padx=10, pady=0, sticky="wsne")
 
-        # Texto y entrada para el potencia nominal
-        subgrid_potencia_nominal = ctk.CTkFrame(grid_botones, corner_radius=17)
-        subgrid_potencia_nominal.grid(row=7, column=0, padx=7, pady=7, sticky="nsew")
-        self.label_potencia_nominal = ctk.CTkLabel(subgrid_potencia_nominal, text="Potencia punto nominal: 000.00[W]", font=("Helvetica", 20), corner_radius=10, width=250, anchor='w')
-        self.label_potencia_nominal.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
-
+        self.b_close = ctk.CTkButton(self, text="Cerrar", command=self.close, height=50)
+        self.b_close.grid(row=2, column=0, padx=10, pady=10, sticky="wsne")
+    ## CREACION DE BOTONES ACABAR ##
 
     ## CONFIGURACION DE GRAFICA INICIO ##
         # Crear la figura de matplotlib con fondo oscuro
@@ -130,7 +138,6 @@ class Interfaz(ctk.CTk):
         self.ax.grid(True, linewidth=0.5, alpha=0.5)
         self.ax.set_xticks([])
         self.ax.set_xticklabels([])
-        self.ax.legend()
 
         # Configuración del subplot más delgado debajo del principal
         self.ax_sub.set_facecolor('#E0E0E0')
@@ -174,21 +181,34 @@ class Interfaz(ctk.CTk):
         self.ax_sub.set_ylim(0, max(self.Ws)*1.05)
 
         self.consumo_disponible_nominal = self.q*self.ps/3600
-        self.rendimiento_nominal = self.consumo_disponible_nominal / self.Ws * 100
-        index_nominal = np.where(self.rendimiento_nominal == max(self.rendimiento_nominal))
+        self.v_rendimiento_nominal = self.consumo_disponible_nominal / self.Ws * 100
+        index_nominal = np.where(self.v_rendimiento_nominal == max(self.v_rendimiento_nominal))
+        self.rendimiento_nominal = self.v_rendimiento_nominal[index_nominal]
         self.q_nominal = self.q[index_nominal]
         self.ps_nominal = self.ps[index_nominal]
         self.Ws_nominal = self.Ws[index_nominal]
         
         self.p_nominal_ps = self.ax.scatter(self.q_nominal, self.ps_nominal, color='#FF0000' ,marker='^', label='Punto nominal')  # Punto curva trabajo
         self.p_nominal_Ws = self.ax_sub.scatter(self.q_nominal, self.Ws_nominal, color='#0000FF' ,marker='^', label='Consumo nominal')  # Punto curva trabajo
-            
+        
+        # Texto y entrada para el rendimiento nominal
+        subgrid_rend_nominal = ctk.CTkFrame(grid_botones)
+        subgrid_rend_nominal.grid(row=6, column=0, padx=7, pady=7, sticky="nsew")
+        self.label_rend_nominal = ctk.CTkLabel(subgrid_rend_nominal, text=f"Rendimiento nominal: {self.rendimiento_nominal[0]:.2f}[%]", font=("Helvetica", 20), width=250, anchor='w')
+        self.label_rend_nominal.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
+
+        # Texto y entrada para el potencia nominal
+        subgrid_potencia_nominal = ctk.CTkFrame(grid_botones)
+        subgrid_potencia_nominal.grid(row=7, column=0, padx=7, pady=7, sticky="nsew")
+        self.label_potencia_nominal = ctk.CTkLabel(subgrid_potencia_nominal, text=f"Potencia punto nominal: {self.Ws_nominal[0]:.2f}[W]", font=("Helvetica", 20), width=250, anchor='w')
+        self.label_potencia_nominal.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
+
         self.q, self.N = f_grafics.calcular_puntos_intermedios(self.q_i, self.N_i)
     ## CURVAS DE GRAFICA ACABAR ##
 
         # Integrar la figura en el widget de Tkinter con bordes redondeados
         self.canvas_frame = ctk.CTkFrame(self, corner_radius=15)
-        self.canvas_frame.grid(row=0, column=1, sticky="nsew", padx=0, pady=0)
+        self.canvas_frame.grid(row=0, column=1, sticky="nsew", padx=0, pady=0, rowspan=3)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.canvas_frame)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(fill=ctk.BOTH, expand=1)
@@ -247,7 +267,7 @@ class Interfaz(ctk.CTk):
                         self.curva_consumo_disponible, = self.ax_sub.plot(self.q_new_c, self.consumo_disponible, 'y-', linewidth=0.5, label='Potencia mecanica')
                         self.band_1 = 1
                         self.ax.legend(loc='upper right')
-                        self.ax_sub.legend(loc='upper right')
+                        self.ax_sub.legend(loc='lower right')
 
                     #actualizacion de las graficas
                     self.curva_n_new.set_data(self.q_new_c, self.ps_new_c)
@@ -257,7 +277,7 @@ class Interfaz(ctk.CTk):
                     self.vertical_line_sub.set_xdata([q, q])
                                 
                     self.canvas.draw_idle() # Actualizar la gráfica
-                    
+
     def actualizar_texto(self):
         self.label_q.configure(text=f"Caudal [m^3/h]: {punto_curva[0]:.2f}")
         self.label_ps.configure(text=f"Presión disponible [Pa]: {punto_curva[1]:.2f}")
@@ -271,7 +291,14 @@ class Interfaz(ctk.CTk):
         self.rend_calculado = self.W_mecanica / self.Ws_corte * 100
         self.label_rend.configure(text=f"Rendimiento [%]: {self.rend_calculado:.2f}")
 
-#class EntradaDatos(ctk.CTk):
+    def open_toplevel(self):
+        if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
+            self.toplevel_window = Informacion(self)  # Crear la ventana si es None o está destruida
+        else:
+            self.toplevel_window.focus()
+
+    def close(self):
+        quit()
 
 
 if __name__ == "__main__":
