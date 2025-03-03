@@ -1,37 +1,16 @@
+import tkinter as tk
+from tkinter import ttk
 import customtkinter as ctk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 import matplotlib.lines as lines
-import f_grafics
+import f_grafics, f_database
 
 ## VARIABLES GENERALES INICIO ##
 punto_curva = [500, 300]
-curva_rpm_max = np.array([
-    [104.52, 1210.18, 1800, 1073.45], 
-    [1687.54, 1167.32, 1800, 1685.65], 
-    [3231.27, 1135.05, 1800, 2243.06],
-    [4823, 1083.77, 1800, 2640.73],
-    [6400.31, 1003.43, 1800, 2938.24],
-    [7765.3, 877.02, 1800, 3040.93],
-    [9292.04, 670.09, 1800, 2914.37],
-    [10419.25, 469.44, 1800, 2888.45], 
-    [11441.17, 244.1, 1800, 2564.21],
-    [12392.44, 0, 1800, 2149.38]
-])
-curva_rpm_max_2 = np.array([
-    [10605.45, 340.28, 1105, 3666.27],
-    [11812.19, 296.56, 1105, 3332.06],
-    [14336.78, 281.58, 1105, 3342.18],
-    [16981.32, 255.66, 1105, 2870.25],
-    [18970.7, 226.26, 1105, 2792.89],
-    [21131.28, 190.16, 1105, 2695.64],
-    [23405.1, 141.18, 1105, 2541.19],
-    [26188.91, 70.68, 1105, 2315.32],
-    [28911.25, 0, 1105, 2042.91]
-])
-
-curva_simulada = []
+# Se crea una copia temporal de la base de datos
+matriz_vent = f_database.copia_database()
 ## VARIABLES GENERALES ACABAR ##
 
 ## VENTANA DE ELECCION VENTILADOR INICIO ##
@@ -40,13 +19,69 @@ class Informacion(ctk.CTkToplevel):
         super().__init__(parent)
         self.title("Configuración")
         self.geometry("400x300")
-        self.minsize(800, 400)
+        self.minsize(400, 300)
 
+        # Se inicializa la matriz de ventiladores, copia de database
+        self.matriz_vent = matriz_vent
+
+        # Configurar el grid
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+
+        # Crear el Treeview
+        self.tree = ttk.Treeview(self, columns=("col1", "col2"), show="headings")
+        self.tree.heading("col1", text="BRAND", anchor=tk.W)
+        self.tree.heading("col2", text="MODEL", anchor=tk.W)
+
+        # Añadir elementos a la tabla
+        for vent in self.matriz_vent:
+            self.tree.insert("", tk.END, values=(vent[0], vent[1]))
+
+        # Empaquetar el Treeview
+        self.tree.grid(row=0, column=0, columnspan=2, pady=0, padx=0, sticky='wsne')
+
+        # Asociar la función de selección al evento de clic
+        self.tree.bind("<<TreeviewSelect>>", self.on_select)
+
+        # Boton Actualizar
+        self.b_actualizar = ctk.CTkButton(self, text="Actualizar", command=self.actualizar_copia_database, height=50)
+        self.b_actualizar.grid(row=1, column=0, padx=5, pady=5, sticky="wsne")
+
+        # Boton add
+        self.b_add_vent = ctk.CTkButton(self, text="Añadir Ventilador", command=self.add_vent, height=50)
+        self.b_add_vent.grid(row=1, column=1, padx=5, pady=5, sticky="wsne")
+
+    # Funcion actualizar copia de database
+    def actualizar_copia_database(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        self.matriz_vent = f_database.copia_database()
+        for vent in self.matriz_vent:
+            self.tree.insert("", tk.END, values=(vent[0], vent[1]))
+        print("The database have been actulized")
+
+    #Funcion add ventilador
+    def add_vent(self):
+        print('pepe')
+
+    # Funcion de seleccion de lista
+    def on_select(self, event):
+        selected_item = self.tree.selection()
+        # Indice de la fila seleccionada
+        index = self.tree.index(selected_item)
+        # El ventilador seleccionado se pasa a la funcion de actualizar
+        vent = self.matriz_vent[index]
+        app.actualizar_graficas(vent)
+        evento_simulado = f_database.EventoSimulado(xdata= vent[2][1][0]/2, ydata=vent[2][1][1]/2)
+        app.on_move(evento_simulado, mode=1)
 ## VENTANA DE ELECCION VENTILADOR ACABAR ##
 
 ## INTERFAZ INICIO ##
 class Interfaz(ctk.CTk):
     def __init__(self, *args, **kwargs):
+
         super().__init__(*args, **kwargs)
         self.toplevel_window = None
         # Configurar el tema y la apariencia de customtkinter
@@ -163,20 +198,20 @@ class Interfaz(ctk.CTk):
 
     ## CURVAS DE GRAFICA INICIO ##
         self.m_correc = f_grafics.interpolar_factor_correccion(f_grafics.factor_correccion_radial)
-        self.q_i, self.ps_i, self.N_i, self.Ws_i = f_grafics.extraer_datos(curva_rpm_max)
-        self.ax.plot(self.q_i, self.ps_i, 'g--', linewidth=1.5, label='RPM maximas fabricante')
-        self.ax_sub.plot(self.q_i, self.Ws_i, 'g--', linewidth=1.5, label='Consumo maximo fabricante')
+        self.q_i, self.ps_i, self.N_i, self.Ws_i = f_grafics.extraer_datos(matriz_vent[0][2])
+        self.curva_rpm_max_f, = self.ax.plot(self.q_i, self.ps_i, 'g--', linewidth=1.5, label='RPM maximas fabricante')
+        self.curva_consumo_maximo_f, = self.ax_sub.plot(self.q_i, self.Ws_i, 'g--', linewidth=1.5, label='Consumo maximo fabricante')
         
         plt.subplots_adjust(hspace=0.02, top=0.99, bottom=0.05, left=0.05, right=0.99)
 
         self.q, self.ps = f_grafics.calcular_puntos_intermedios(self.q_i, self.ps_i)
-        self.curva_n, = self.ax.plot(self.q, self.ps, 'r--', linewidth=1, label='RPM maximas interpoladas')
+        self.curva_rpm_max, = self.ax.plot(self.q, self.ps, 'r--', linewidth=1, label='RPM maximas interpoladas')
         self.band_1 = 0
         self.ax.set_xlim(0, max(self.q)*1.05)
         self.ax.set_ylim(0, max(self.ps)*1.05)
 
         self.q, self.Ws = f_grafics.calcular_puntos_intermedios(self.q_i, self.Ws_i)
-        self.ax_sub.plot(self.q, self.Ws, 'b--', linewidth=1, label='Consumo maximo interpolado')
+        self.curva_consumo_maximo, = self.ax_sub.plot(self.q, self.Ws, 'b--', linewidth=1, label='Consumo maximo interpolado')
         self.ax_sub.set_xlim(0, max(self.q)*1.05)
         self.ax_sub.set_ylim(0, max(self.Ws)*1.05)
 
@@ -214,7 +249,6 @@ class Interfaz(ctk.CTk):
         self.canvas.get_tk_widget().pack(fill=ctk.BOTH, expand=1)
 
     ## MOVER PUNTO CURVA DE MONTAJE INICIO ##
-    
         # Variables para controlar el estado del clic
         self.dragging = False
         # Conectar los eventos de clic y movimiento del ratón
@@ -222,16 +256,48 @@ class Interfaz(ctk.CTk):
         self.canvas.mpl_connect('button_release_event', self.on_release)
         self.canvas.mpl_connect('motion_notify_event', self.on_move)
 
+    def actualizar_graficas(self, ventilador):
+        self.m_correc = f_grafics.interpolar_factor_correccion(f_grafics.factor_correccion_radial)
+        self.q_i, self.ps_i, self.N_i, self.Ws_i = f_grafics.extraer_datos(ventilador[2])
+        self.curva_rpm_max_f.set_data(self.q_i, self.ps_i)
+        self.curva_consumo_maximo_f.set_data(self.q_i, self.Ws_i)
+
+        self.q, self.ps = f_grafics.calcular_puntos_intermedios(self.q_i, self.ps_i)
+        self.curva_rpm_max.set_data(self.q, self.ps)
+        self.ax.set_xlim(0, max(self.q)*1.05)
+        self.ax.set_ylim(0, max(self.ps)*1.05)
+
+        self.q, self.Ws = f_grafics.calcular_puntos_intermedios(self.q_i, self.Ws_i)
+        self.curva_consumo_maximo.set_data(self.q, self.Ws)
+        self.ax_sub.set_xlim(0, max(self.q)*1.05)
+        self.ax_sub.set_ylim(0, max(self.Ws)*1.05)
+
+        self.consumo_disponible_nominal = self.q*self.ps/3600
+        self.v_rendimiento_nominal = self.consumo_disponible_nominal / self.Ws * 100
+        index_nominal = np.where(self.v_rendimiento_nominal == max(self.v_rendimiento_nominal))
+        self.rendimiento_nominal = self.v_rendimiento_nominal[index_nominal]
+        self.q_nominal = self.q[index_nominal]
+        self.ps_nominal = self.ps[index_nominal]
+        self.Ws_nominal = self.Ws[index_nominal]
+        
+        self.p_nominal_ps.set_offsets(np.column_stack((self.q_nominal, self.ps_nominal)))  # Punto curva trabajo
+        self.p_nominal_Ws.set_offsets(np.column_stack((self.q_nominal, self.Ws_nominal)))  # Punto curva trabajo
+        
+        # Texto y entrada para el rendimiento nominal y la potencia nominal
+        self.label_rend_nominal.configure(text=f"Rendimiento nominal: {self.rendimiento_nominal[0]:.2f}[%]")
+        self.label_potencia_nominal.configure(text=f"Potencia punto nominal: {self.Ws_nominal[0]:.2f}[W]")
+        self.q, self.N = f_grafics.calcular_puntos_intermedios(self.q_i, self.N_i)
+
     def on_click(self, event):
-        if event.button == 1:  
+        if event.button == 1:
             self.dragging = True
 
     def on_release(self, event):
         if event.button == 1:  
             self.dragging = False
 
-    def on_move(self, event):
-        if self.dragging and event.inaxes:
+    def on_move(self, event, mode=0):
+        if (self.dragging and event.inaxes) or mode==1:
             q, ps = event.xdata, event.ydata
 
             if self.entry_q.get() != "":
@@ -299,9 +365,8 @@ class Interfaz(ctk.CTk):
 
     def close(self):
         quit()
-
+## INTERFAZ ACABAR ##
 
 if __name__ == "__main__":
     app = Interfaz()
     app.mainloop()
-## INTERFAZ ACABAR ##
