@@ -22,3 +22,12 @@ class EventoSimulado:
         self.button = 1
         self.dragging = True
         self.inaxes = True
+
+def add_vent(vent):
+    text_ventilador = ('\nVENT;'+vent[0]+';'+vent[1]+';'+str(vent[2]))
+    print(text_ventilador)
+
+    content = read_text_file()
+    content.append(text_ventilador)
+    with open('database.txt', 'w') as file:
+        file.writelines(content)

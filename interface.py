@@ -14,13 +14,33 @@ matriz_vent = f_database.copia_database()
 ## VARIABLES GENERALES ACABAR ##
 
 ## VENTANA DE ELECCION VENTILADOR INICIO ##
-class Informacion(ctk.CTkToplevel):
-    def __init__(self, parent):
+class Add_Vent(ctk.CTkToplevel):
+    def __init__(self, parent, matriz):
         super().__init__(parent)
         self.title("Configuración")
         self.geometry("400x300")
         self.minsize(400, 300)
 
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+
+        self.b_add_vent = ctk.CTkButton(self, text="Guardar", command=self.add, height=50)
+        self.b_add_vent.grid(row=1, column=1, padx=5, pady=5, sticky="wsne")
+
+    def add(self):
+        vent = ['EBM','A3G800-AU21-03',[[28910, 0, 1100, 2043],[25020, 100, 1100, 2410],[20500, 200, 1100, 2723],[16450, 260, 1100,3025]]]
+        f_database.add_vent(vent)
+
+class Informacion(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Configuración")
+        self.geometry("400x300")
+        self.minsize(400, 600)
+
+        self.toplevel_window = None
         # Se inicializa la matriz de ventiladores, copia de database
         self.matriz_vent = matriz_vent
 
@@ -50,7 +70,7 @@ class Informacion(ctk.CTkToplevel):
         self.b_actualizar.grid(row=1, column=0, padx=5, pady=5, sticky="wsne")
 
         # Boton add
-        self.b_add_vent = ctk.CTkButton(self, text="Añadir Ventilador", command=self.add_vent, height=50)
+        self.b_add_vent = ctk.CTkButton(self, text="Añadir Ventilador", command=self.open_toplevel, height=50)
         self.b_add_vent.grid(row=1, column=1, padx=5, pady=5, sticky="wsne")
 
     # Funcion actualizar copia de database
@@ -62,9 +82,12 @@ class Informacion(ctk.CTkToplevel):
             self.tree.insert("", tk.END, values=(vent[0], vent[1]))
         print("The database have been actulized")
 
-    #Funcion add ventilador
-    def add_vent(self):
-        print('pepe')
+    def open_toplevel(self):
+        self.actualizar_copia_database()
+        if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
+            self.toplevel_window = Add_Vent(self, self.matriz_vent)  # Crear la ventana si es None o está destruida
+        else:
+            self.toplevel_window.focus()
 
     # Funcion de seleccion de lista
     def on_select(self, event):
