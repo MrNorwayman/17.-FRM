@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog
 import customtkinter as ctk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -9,16 +9,17 @@ import matplotlib.lines as lines
 import f_grafics, f_database
 import subprocess
 from io import StringIO
+import os
 
 # Se crea una copia temporal de la base de datos
 punto_curva = [500, 300]
 
 ## VENTANA DE SELECCION VENTILADOR INICIO ##
 class Add_Vent(ctk.CTkToplevel):
-    def __init__(self, parent, matriz):
+    def __init__(self, parent, edit_vent=[]):
         super().__init__(parent)
         self.title("Configuration")
-        self.geometry("500x700")
+        self.geometry("500x550")
         self.matriz_vent = f_database.copia_database()
         for i in range(3):
             self.grid_columnconfigure(i, weight=1)
@@ -29,15 +30,16 @@ class Add_Vent(ctk.CTkToplevel):
 
         # Tabla de datos
         self.tabla = ttk.Treeview(self ,columns=("col1","col2","col3"), show="headings")
-        self.tabla.heading("col1", text="Caudal", anchor='w')
-        self.tabla.heading("col2", text="Pressure", anchor='w')
-        self.tabla.heading("col3", text="Power", anchor='w')
+        self.tabla.heading("col1", text="Caudal [m^3/h]", anchor='w')
+        self.tabla.heading("col2", text="Pressure [Pa]", anchor='w')
+        self.tabla.heading("col3", text="Power [W]", anchor='w')
         self.tabla.grid(row=1, column=0, columnspan=3, padx=5, sticky="wsne")
 
         # Entrada de texto copiado en Excel
         self.placeholder_entry="Insert Excel copied data of fan points"
         self.text_entry = tk.Text(self, height=10, width=30)
         self.text_entry.insert("1.0", self.placeholder_entry)
+        self.text_entry.config(fg="grey")
         self.text_entry.bind("<FocusIn>", self.on_focus_in)
         self.text_entry.bind("<FocusOut>", self.on_focus_out)
         self.text_entry.grid(row=2, column=0, columnspan=3, padx=5, pady=5, sticky='nswe')
@@ -56,6 +58,17 @@ class Add_Vent(ctk.CTkToplevel):
         self.entry_speed = ctk.CTkEntry(self, placeholder_text="Entry speed...", width=50, height=30)
         self.entry_speed.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
 
+        self.edit_vent = edit_vent
+        if self.edit_vent!=[]:
+            self.text_entry.delete("1.0", tk.END)
+            self.text_entry.config(fg="black")     
+            self.entry_brand.insert(0, self.edit_vent[0])
+            self.entry_model.insert(0, self.edit_vent[1])
+            self.entry_speed.insert(0, self.edit_vent[2][0][2])
+            for punto in self.edit_vent[2]:
+                self.text_entry.insert("0.0", f"{str(punto[0])}\t{punto[1]}\t{punto[3]}\n")
+            self.on_focus_out(event=True)
+
     def load_data(self):
         try:
             # Leer datos del widget Text
@@ -71,6 +84,8 @@ class Add_Vent(ctk.CTkToplevel):
                 for value in row:
                     if isinstance(value, float):
                         float_row.append(value)
+                    elif isinstance(value, int):
+                        float_row.append(float(value))
                     else:
                         # Reemplazar comas y puntos según sea necesario
                         value = value.replace(",", ".")
@@ -94,11 +109,14 @@ class Add_Vent(ctk.CTkToplevel):
         if self.text_entry.get("1.0", tk.END).strip() == "":
             self.text_entry.insert("1.0", self.placeholder_entry)
             self.text_entry.config(fg="grey")
-        
         self.load_data()
 
     def add_pdf(self):
-        return
+        if self.entry_model.get() != "":
+            model = self.entry_model.get()
+            ruta_pdf = filedialog.askopenfilename()
+            nuevo_nombre = f"PDF_Database/{model}.pdf"
+            os.rename(ruta_pdf, nuevo_nombre)
 
     def add(self):
         if self.entry_brand.get() != "":
@@ -108,14 +126,23 @@ class Add_Vent(ctk.CTkToplevel):
         if self.entry_speed.get() != "":
             speed = float(self.entry_speed.get())
 
+        self.load_data()
+
         if brand!="" and model!="" and speed!="" and self.float_matrix!=[]:
             self.puntos_new_vent =[]
             for punto in self.float_matrix:
                 punto.insert(2, speed)
                 self.puntos_new_vent.append(punto)
             new_vent=[brand, model, self.puntos_new_vent]
-            f_database.add_vent(new_vent)
+            if self.edit_vent==[]:
+                f_database.add_vent(new_vent)
+
+            if self.edit_vent!=[]:
+                self.matriz_vent = f_database.copia_database()
+                print(new_vent)
+                f_database.edit_vent(new_vent)
             self.matriz_vent = f_database.copia_database()
+
 ## VENTANA DE SELECCION VENTILADOR ACABAR ##
 
 ## INTERFAZ INICIO ##
@@ -129,6 +156,7 @@ class Interfaz(ctk.CTk):
         ctk.set_default_color_theme("blue")  # Cambia el tema de color
 
         self.matriz_vent = f_database.copia_database()
+        self.vent = []
 
         # Crear la ventana principal
         self.title("FRM-Simulator")
@@ -232,8 +260,8 @@ class Interfaz(ctk.CTk):
         self.b_actualizar.grid(row=1, column=0, padx=5, pady=5, sticky="wsne")
 
         # Boton editar
-        self.b_add_vent = ctk.CTkButton(grid_config, text="Editar", height=40, width=60)
-        self.b_add_vent.grid(row=1, column=1, padx=5, pady=5, sticky="wsne")
+        self.b_edit = ctk.CTkButton(grid_config, text="Editar", command=self.edit, height=40, width=60)
+        self.b_edit.grid(row=1, column=1, padx=5, pady=5, sticky="wsne")
 
         # Boton pdf
         self.b_pdf = ctk.CTkButton(grid_config, text="Abrir PDF",command=self.abrir_pdf, height=40, width=60)
@@ -442,9 +470,16 @@ class Interfaz(ctk.CTk):
         self.rend_calculado = self.W_mecanica / self.Ws_corte * 100
         self.label_rend.configure(text=f"Rendimiento [%]: {self.rend_calculado:.2f}")
 
-    def open_toplevel(self):
+    def abrir_conf(self):
+        self.open_toplevel()
+
+    def edit(self):
+        if self.vent!=[]:
+            self.open_toplevel(vent=self.vent)
+
+    def open_toplevel(self, vent=[]):
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
-            self.toplevel_window = Add_Vent(self, self.matriz_vent)  # Crear la ventana si es None o está destruida
+            self.toplevel_window = Add_Vent(self, vent)  # Crear la ventana si es None o está destruida
         else:
             self.toplevel_window.focus()
 

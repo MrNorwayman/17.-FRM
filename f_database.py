@@ -2,8 +2,7 @@ import ast
 
 def read_text_file():
     with open('database.txt', 'r') as file:
-        content = file.readlines()
-    return content
+        return file.readlines()
 
 def copia_database():
     content = read_text_file()
@@ -28,5 +27,32 @@ def add_vent(vent):
     print(text_ventilador)
     content = read_text_file()
     content.append(text_ventilador)
+    with open('database.txt', 'w') as file:
+        file.writelines(content)
+
+def delete_vent(vent):
+    lines = read_text_file()
+    content=[]
+    for line in lines:
+        if line[0:4] == 'VENT':
+            vent_db = line.split(';')
+            if vent_db[1]==vent[0] and vent_db[2]==vent[1]:
+                # Elimina la linea
+                continue
+        content.append(line)
+
+    with open('database.txt', 'w') as file:
+        file.writelines(content)
+
+def edit_vent(vent):
+    lines = read_text_file()
+    content=[]
+    for line in lines:
+        if line[0:4] == 'VENT':
+            vent_db = line.split(';')
+            if vent_db[1]==vent[0] and vent_db[2]==vent[1]:
+                line = ('VENT;'+vent[0]+';'+vent[1]+';'+str(vent[2])+'\n')
+        content.append(line)
+            
     with open('database.txt', 'w') as file:
         file.writelines(content)
