@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, messagebox
 import customtkinter as ctk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -9,7 +9,6 @@ import matplotlib.lines as lines
 import f_grafics, f_database
 import subprocess
 from io import StringIO
-import os
 
 # Se crea una copia temporal de la base de datos
 punto_curva = [500, 300]
@@ -29,10 +28,14 @@ class Add_Vent(ctk.CTkToplevel):
         self.grid_rowconfigure(3, weight=0)
 
         # Tabla de datos
-        self.tabla = ttk.Treeview(self ,columns=("col1","col2","col3"), show="headings")
+        columns=("col1","col2","col3", "col4")
+        self.tabla = ttk.Treeview(self ,columns=columns, show="headings")
         self.tabla.heading("col1", text="Caudal [m^3/h]", anchor='w')
         self.tabla.heading("col2", text="Pressure [Pa]", anchor='w')
-        self.tabla.heading("col3", text="Power [W]", anchor='w')
+        self.tabla.heading("col3", text="Speed [rpm]", anchor='w')
+        self.tabla.heading("col4", text="Power [W]", anchor='w')
+        for column in columns:
+            self.tabla.column(column, width=125)
         self.tabla.grid(row=1, column=0, columnspan=3, padx=5, sticky="wsne")
 
         # Entrada de texto copiado en Excel
@@ -45,18 +48,20 @@ class Add_Vent(ctk.CTkToplevel):
         self.text_entry.grid(row=2, column=0, columnspan=3, padx=5, pady=5, sticky='nswe')
 
         # Botones inferiores
-        self.b_add_vent = ctk.CTkButton(self, text="Save", command=self.add, height=30)
-        self.b_add_vent.grid(row=3, column=2, padx=5, pady=5, sticky="wsne")
+        self.b_save = ctk.CTkButton(self, text="Save", command=self.save, height=30)
+        self.b_save.grid(row=3, column=2, padx=5, sticky="wsne")
         self.b_add_pdf = ctk.CTkButton(self, text="Load PDF", command=self.add_pdf, height=30)
-        self.b_add_pdf.grid(row=3, column=0, columnspan=2, padx=5, pady=5, sticky="wsne")
+        self.b_add_pdf.grid(row=3, column=0, columnspan=2, padx=5, sticky="wsne")
+        self.b_del_vent = ctk.CTkButton(self, text="Delete", command=self.delete, height=30)
+        self.b_del_vent.grid(row=4, column=2, padx=5, pady=5, sticky="wsne")
+        self.b_del_pdf = ctk.CTkButton(self, text="Change PDF", command=self.change_pdf, height=30)
+        self.b_del_pdf.grid(row=4, column=0, columnspan=2, padx=5, pady=5, sticky="wsne")
 
         # Entrada de marca y modelo
         self.entry_brand = ctk.CTkEntry(self, placeholder_text="Entry brand...", width=50, height=30)
         self.entry_brand.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
         self.entry_model = ctk.CTkEntry(self, placeholder_text="Entry model...", width=50, height=30)
-        self.entry_model.grid(row=0, column=1, sticky="nsew", pady=5)
-        self.entry_speed = ctk.CTkEntry(self, placeholder_text="Entry speed...", width=50, height=30)
-        self.entry_speed.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
+        self.entry_model.grid(row=0, column=1, columnspan=2, sticky="nsew", padx=5, pady=5)
 
         self.edit_vent = edit_vent
         if self.edit_vent!=[]:
@@ -64,9 +69,8 @@ class Add_Vent(ctk.CTkToplevel):
             self.text_entry.config(fg="black")     
             self.entry_brand.insert(0, self.edit_vent[0])
             self.entry_model.insert(0, self.edit_vent[1])
-            self.entry_speed.insert(0, self.edit_vent[2][0][2])
             for punto in self.edit_vent[2]:
-                self.text_entry.insert("0.0", f"{str(punto[0])}\t{punto[1]}\t{punto[3]}\n")
+                self.text_entry.insert("0.0", f"{str(punto[0])}\t{punto[1]}\t{punto[2]}\t{punto[3]}\n")
             self.on_focus_out(event=True)
 
     def load_data(self):
@@ -75,7 +79,7 @@ class Add_Vent(ctk.CTkToplevel):
             data = self.text_entry.get("1.0", tk.END)
             # Convertir los datos en un DataFrame
             df = pd.read_csv(StringIO(data), sep="\t", header=None)
-            df.columns = ["Caudal", "Pressure","Power"]  # Asignar nombres a las columnas
+            df.columns = ["Caudal", "Pressure","Speed","Power"]  # Asignar nombres a las columnas
             # Convertir los datos en matriz de listas
             matrix = df.values.tolist()
             self.float_matrix = []
@@ -98,51 +102,94 @@ class Add_Vent(ctk.CTkToplevel):
             for row in self.float_matrix:
                 self.tabla.insert("", "end", values=row)
         except Exception as e:
-            print(f"Error al cargar los datos: {e}")
+            messagebox.showwarning("Carga de datos",f"Error al cargar los datos: {e}\n introduzca los datos correctamente")
+            return
 
     def on_focus_in(self, event):
         if self.text_entry.get("1.0", tk.END).strip() == self.placeholder_entry:
             self.text_entry.delete("1.0", tk.END)
             self.text_entry.config(fg="black")
+        return
 
     def on_focus_out(self, event):
         if self.text_entry.get("1.0", tk.END).strip() == "":
             self.text_entry.insert("1.0", self.placeholder_entry)
             self.text_entry.config(fg="grey")
         self.load_data()
+        return
 
     def add_pdf(self):
-        if self.entry_model.get() != "":
-            model = self.entry_model.get()
-            ruta_pdf = filedialog.askopenfilename()
-            nuevo_nombre = f"PDF_Database/{model}.pdf"
-            os.rename(ruta_pdf, nuevo_nombre)
+        model = self.entry_model.get()
+        f_database.add_pdf(model)
+        return
+
+    def change_pdf(self):
+        model = self.entry_model.get()
+        f_database.change_pdf(model)
+        return
+
+    def save(self):
+        brand=self.entry_brand.get()
+        model=self.entry_model.get()
+        if brand=="":
+            messagebox.showwarning("Error marca", "No ha introducido marca.\n Introduzca una marca.")
+            return
+        elif model=="":
+            messagebox.showwarning("Error modelo", "No ha introducido modelo.\n Introduzca un modelo.")
+            return
+        else:
+            self.load_data()
+            if self.float_matrix==[]:
+                messagebox.showwarning("Carga de datos",f"Error al cargar los datos.\n introduzca los datos correctamente.")
+                return
+            else:
+                self.new_vent=[brand, model, self.float_matrix]
+            
+            if self.edit_vent==[]:
+                self.add()
+
+            else:
+                self.edit()
+        return
+    
+    def edit(self):
+        self.matriz_vent = f_database.copia_database()
+        print(self.new_vent)
+        f_database.edit_vent(self.new_vent, self.edit_vent)
+            
+        self.matriz_vent = f_database.copia_database()
+        messagebox.showinfo("Guardado", "Ventilador editado")
+        app.actualizar_copia_database()
+        self.destroy()
+        return
 
     def add(self):
-        if self.entry_brand.get() != "":
-            brand = self.entry_brand.get()
-        if self.entry_model.get() != "":
-            model = self.entry_model.get()
-        if self.entry_speed.get() != "":
-            speed = float(self.entry_speed.get())
+        f_database.add_vent(self.new_vent)
+        self.matriz_vent = f_database.copia_database()
+        messagebox.showinfo("Guardado", "Ventilador añadido")
+        app.actualizar_copia_database()
+        self.destroy()
+        return
+           
+    def delete(self):
+        brand = self.entry_brand.get()
+        model = self.entry_model.get()
 
-        self.load_data()
-
-        if brand!="" and model!="" and speed!="" and self.float_matrix!=[]:
-            self.puntos_new_vent =[]
-            for punto in self.float_matrix:
-                punto.insert(2, speed)
-                self.puntos_new_vent.append(punto)
-            new_vent=[brand, model, self.puntos_new_vent]
-            if self.edit_vent==[]:
-                f_database.add_vent(new_vent)
-
-            if self.edit_vent!=[]:
-                self.matriz_vent = f_database.copia_database()
-                print(new_vent)
-                f_database.edit_vent(new_vent)
-            self.matriz_vent = f_database.copia_database()
-
+        if brand!="" and model!="":
+            respuesta = messagebox.askokcancel("Advertencia", f"¿Esta seguro de eliminar el ventilador {model} de {brand}?", default=messagebox.CANCEL)
+            if respuesta:
+                delete_vent=[brand, model]
+                f_database.delete_vent(delete_vent)
+                try:
+                    f_database.delete_pdf(model)
+                    self.destroy()
+                    app.actualizar_copia_database()
+                except:
+                    self.destroy()
+                    app.actualizar_copia_database()
+                    return
+        else:
+            return
 ## VENTANA DE SELECCION VENTILADOR ACABAR ##
 
 ## INTERFAZ INICIO ##
@@ -220,7 +267,7 @@ class Interfaz(ctk.CTk):
         self.label_rend.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
     ## CREACION DE BOTONES INICIO ##
-        self.b_abrir_conf = ctk.CTkButton(self, text="Configuración", command=self.open_toplevel, height=50)
+        self.b_abrir_conf = ctk.CTkButton(self, text="Añadir Ventilador", command=self.open_toplevel, height=50)
         self.b_abrir_conf.grid(row=1, column=0, padx=10, pady=0, sticky="wsne")
 
         self.b_close = ctk.CTkButton(self, text="Cerrar", command=self.close, height=50)
@@ -310,24 +357,29 @@ class Interfaz(ctk.CTk):
     ## CONFIGURACION DE GRAFICA ACABAR ##
 
     ## CURVAS DE GRAFICA INICIO ##
+        # Curvas del fabricante
         self.m_correc = f_grafics.interpolar_factor_correccion(f_grafics.factor_correccion_radial)
         self.q_i, self.ps_i, self.N_i, self.Ws_i = f_grafics.extraer_datos(self.matriz_vent[0][2])
-        self.curva_rpm_max_f, = self.ax.plot(self.q_i, self.ps_i, 'g--', linewidth=1.5, label='RPM maximas fabricante')
+        self.curva_rpm_max_f, = self.ax.plot(self.q_i, self.ps_i, 'g--', linewidth=1.5, label='rpm maximas fabricante')
         self.curva_consumo_maximo_f, = self.ax_sub.plot(self.q_i, self.Ws_i, 'g--', linewidth=1.5, label='Consumo maximo fabricante')
-        
+
+        # Ajuste de la grafica a los bordes
         plt.subplots_adjust(hspace=0.02, top=0.99, bottom=0.05, left=0.07, right=0.99)
 
+        # Curva caudal/presion maxima interpoladas
         self.q, self.ps = f_grafics.calcular_puntos_intermedios(self.q_i, self.ps_i)
-        self.curva_rpm_max, = self.ax.plot(self.q, self.ps, 'r--', linewidth=1, label='RPM maximas interpoladas')
+        self.curva_rpm_max, = self.ax.plot(self.q, self.ps, 'r--', linewidth=1, label='rpm maximas interpoladas')
         self.band_1 = 0
         self.ax.set_xlim(0, max(self.q)*1.05)
         self.ax.set_ylim(0, max(self.ps)*1.05)
 
+        # Curva caudal/potencia maxima interpolada
         self.q, self.Ws = f_grafics.calcular_puntos_intermedios(self.q_i, self.Ws_i)
         self.curva_consumo_maximo, = self.ax_sub.plot(self.q, self.Ws, 'b--', linewidth=1, label='Consumo maximo interpolado')
         self.ax_sub.set_xlim(0, max(self.q)*1.05)
         self.ax_sub.set_ylim(0, max(self.Ws)*1.05)
 
+        # Calculo potencia disponible e interseccion
         self.consumo_disponible_nominal = self.q*self.ps/3600
         self.v_rendimiento_nominal = self.consumo_disponible_nominal / self.Ws * 100
         index_nominal = np.where(self.v_rendimiento_nominal == max(self.v_rendimiento_nominal))
@@ -336,6 +388,7 @@ class Interfaz(ctk.CTk):
         self.ps_nominal = self.ps[index_nominal]
         self.Ws_nominal = self.Ws[index_nominal]
         
+        # Graficar punto
         self.p_nominal_ps = self.ax.scatter(self.q_nominal, self.ps_nominal, color='#FF0000' ,marker='^', label='Punto nominal')  # Punto curva trabajo
         self.p_nominal_Ws = self.ax_sub.scatter(self.q_nominal, self.Ws_nominal, color='#0000FF' ,marker='^', label='Consumo nominal')  # Punto curva trabajo
         
@@ -491,8 +544,8 @@ class Interfaz(ctk.CTk):
             self.tree.delete(item)
         self.matriz_vent = f_database.copia_database()
         for vent in self.matriz_vent:
-            self.tree.insert("", tk.END, values=(vent[0], vent[1]))
-        print("The database have been actulized")
+            self.tree.insert("", tk.END, values=(vent[0], vent[1]))  
+        messagebox.showinfo("Actualizada", "Base de datos actualizada")
 
     def abrir_pdf(self):
         ruta_pdf = f"PDF_Database/{self.vent[1]}.pdf"
