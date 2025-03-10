@@ -9,13 +9,17 @@ def read_text_file():
 
 def copia_database():
     content = read_text_file()
-    matriz_vent =[] #Crea la matriz de ventiladores
+    matriz_vent = [] #Crea la matriz de ventiladores
+    vector_marcas = ["Todos"]
     for line in content:
         if line[0:4] == 'VENT':
             vent = line.split(';')
             vent[3] = ast.literal_eval(vent[3])
             matriz_vent.append(vent[1::])
-    return matriz_vent
+
+            if vent[1] not in vector_marcas:
+                vector_marcas.append(vent[1])
+    return matriz_vent, vector_marcas
 
 class EventoSimulado:
     def __init__(self, xdata, ydata):
@@ -27,12 +31,13 @@ class EventoSimulado:
 
 def add_vent(vent):
     # Nueva linea de ventilador
-    text_ventilador = ('\nVENT;'+vent[0]+';'+vent[1]+';'+str(vent[2]))
+    text_ventilador = ('\nVENT;'+vent[0]+';'+vent[1]+';'+str(vent[2])+"\n")
 
     content = read_text_file()  # Lineas database
     ventiladores = []   # Se acumulan todas las lineas de ventiladores para ordenar a posterior
     content_new = []
     duplicado = False
+    print(text_ventilador)
     
     for line in content:    # Lee todas las lineas
         if line[0:4]=='VENT':   # Si la lineas es un ventilador
@@ -42,19 +47,18 @@ def add_vent(vent):
             if vent_db[1]==vent[0] and vent_db[2]==vent[1]:
                 duplicado = True
                 messagebox.showerror("Adevertencia de duplicado", "El ventilador ya existe.\n Si desea cambiar sus datos es necesario editarlo.")
-            
         else:
-            content_new.append(line)
+            if line != "\n":
+                content_new.append(line)
 
     if not duplicado:
         ventiladores.append(text_ventilador)
         ventiladores_ordenados = sorted(ventiladores)
-    
-    for vent in ventiladores_ordenados:
-        content_new.append(vent)
-
-    with open('database.txt', 'w') as file:
-        file.writelines(content)
+        for i in ventiladores_ordenados:
+            content_new.append(i)
+        print(content_new)
+        with open('database.txt', 'w') as file:
+            file.writelines(content_new)
     return
 
 def delete_vent(vent):

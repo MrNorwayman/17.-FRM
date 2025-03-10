@@ -1,4 +1,5 @@
 import tkinter as tk
+from PIL import Image, ImageTk
 from tkinter import ttk, messagebox
 import customtkinter as ctk
 import matplotlib.pyplot as plt
@@ -19,7 +20,12 @@ class Add_Vent(ctk.CTkToplevel):
         super().__init__(parent)
         self.title("Configuration")
         self.geometry("500x550")
-        self.matriz_vent = f_database.copia_database()
+
+        self.iconpath = ImageTk.PhotoImage(file='Logo.png')
+        self.wm_iconbitmap()
+        self.after(300, lambda: self.iconphoto(False, self.iconpath))
+
+        self.matriz_vent, self.vector_marcas = f_database.copia_database()
         for i in range(3):
             self.grid_columnconfigure(i, weight=1)
         self.grid_rowconfigure(0, weight=0)
@@ -74,6 +80,7 @@ class Add_Vent(ctk.CTkToplevel):
             self.on_focus_out(event=True)
 
     def load_data(self):
+        self.float_matrix = []
         try:
             # Leer datos del widget Text
             data = self.text_entry.get("1.0", tk.END)
@@ -82,7 +89,6 @@ class Add_Vent(ctk.CTkToplevel):
             df.columns = ["Caudal", "Pressure","Speed","Power"]  # Asignar nombres a las columnas
             # Convertir los datos en matriz de listas
             matrix = df.values.tolist()
-            self.float_matrix = []
             for row in matrix:
                 float_row = []
                 for value in row:
@@ -102,7 +108,6 @@ class Add_Vent(ctk.CTkToplevel):
             for row in self.float_matrix:
                 self.tabla.insert("", "end", values=row)
         except Exception as e:
-            messagebox.showwarning("Carga de datos",f"Error al cargar los datos: {e}\n introduzca los datos correctamente")
             return
 
     def on_focus_in(self, event):
@@ -140,7 +145,7 @@ class Add_Vent(ctk.CTkToplevel):
         else:
             self.load_data()
             if self.float_matrix==[]:
-                messagebox.showwarning("Carga de datos",f"Error al cargar los datos.\n introduzca los datos correctamente.")
+                messagebox.showwarning("Carga de datos",f"Error al cargar los datos.\nEl formato es: cuatro valores por punto separados por tabulaciones")
                 return
             else:
                 self.new_vent=[brand, model, self.float_matrix]
@@ -153,11 +158,11 @@ class Add_Vent(ctk.CTkToplevel):
         return
     
     def edit(self):
-        self.matriz_vent = f_database.copia_database()
+        self.matriz_vent, self.vector_marcas = f_database.copia_database()
         print(self.new_vent)
         f_database.edit_vent(self.new_vent, self.edit_vent)
             
-        self.matriz_vent = f_database.copia_database()
+        self.matriz_vent, self.vector_marcas = f_database.copia_database()
         messagebox.showinfo("Guardado", "Ventilador editado")
         app.actualizar_copia_database()
         self.destroy()
@@ -165,7 +170,7 @@ class Add_Vent(ctk.CTkToplevel):
 
     def add(self):
         f_database.add_vent(self.new_vent)
-        self.matriz_vent = f_database.copia_database()
+        self.matriz_vent, self.vector_marcas = f_database.copia_database()
         messagebox.showinfo("Guardado", "Ventilador añadido")
         app.actualizar_copia_database()
         self.destroy()
@@ -195,14 +200,17 @@ class Add_Vent(ctk.CTkToplevel):
 ## INTERFAZ INICIO ##
 class Interfaz(ctk.CTk):
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
         self.toplevel_window = None
         # Configurar el tema y la apariencia de customtkinter
         ctk.set_appearance_mode("dark")  # Opciones: "light", "dark"
-        ctk.set_default_color_theme("blue")  # Cambia el tema de color
+        ctk.set_default_color_theme("dark-blue")  # Cambia el tema de color
 
-        self.matriz_vent = f_database.copia_database()
+        self.iconpath = ImageTk.PhotoImage(file='Logo.png')
+        self.wm_iconbitmap()
+        self.iconphoto(False, self.iconpath)
+
+        self.matriz_vent, self.vector_marcas = f_database.copia_database()
         self.vent = []
 
         # Crear la ventana principal
@@ -223,12 +231,12 @@ class Interfaz(ctk.CTk):
         grid_botones.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         # Configurar el grid dentro del grid_botones
         grid_botones.grid_columnconfigure(0, weight=0)
-        for i in range(8):
+        for i in range(20):
             grid_botones.grid_rowconfigure(i, weight=0)
 
         # Texto y entrada para el caudal
         subgrid_q = ctk.CTkFrame(grid_botones)
-        subgrid_q.grid(row=0, column=0, padx=7, pady=7, sticky="nsew")
+        subgrid_q.grid(row=1, column=0, padx=7, pady=7, sticky="nsew")
         self.label_q = ctk.CTkLabel(subgrid_q, text="Caudal [m^3/h]: 00000.00", font=("Helvetica", 20), width=350, anchor='w')
         self.label_q.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
         self.entry_q = ctk.CTkEntry(subgrid_q, placeholder_text="Establece Caudal [m^3/h]", width=150, height=30)
@@ -236,7 +244,7 @@ class Interfaz(ctk.CTk):
 
         # Texto y entrada para la presión disponible
         subgrid_ps = ctk.CTkFrame(grid_botones)
-        subgrid_ps.grid(row=1, column=0, padx=7, pady=7, sticky="nsew")
+        subgrid_ps.grid(row=2, column=0, padx=7, pady=7, sticky="nsew")
         self.label_ps = ctk.CTkLabel(subgrid_ps, text="Presión disponible [Pa]: 00000.00", font=("Helvetica", 20), width=350, anchor='w')
         self.label_ps.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
         self.entry_ps = ctk.CTkEntry(subgrid_ps, placeholder_text="Establece Presión [Pa]", width=150, height=30)
@@ -244,27 +252,32 @@ class Interfaz(ctk.CTk):
 
         # Texto y entrada para las revoluciones
         subgrid_n = ctk.CTkFrame(grid_botones)
-        subgrid_n.grid(row=2, column=0, padx=7, pady=7, sticky="nsew")
+        subgrid_n.grid(row=3, column=0, padx=7, pady=7, sticky="nsew")
         self.label_n = ctk.CTkLabel(subgrid_n, text="Revoluciones [rpm]: 00000.00", font=("Helvetica", 20), width=350, anchor='w')
         self.label_n.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
         # Texto y entrada para el consumo
         subgrid_Ws = ctk.CTkFrame(grid_botones)
-        subgrid_Ws.grid(row=3, column=0, padx=7, pady=7, sticky="nsew")
+        subgrid_Ws.grid(row=4, column=0, padx=7, pady=7, sticky="nsew")
         self.label_Ws = ctk.CTkLabel(subgrid_Ws, text="Consumo [W]: 00000.00", font=("Helvetica", 20), width=350, anchor='w')
         self.label_Ws.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
         # Texto y entrada para el consumo disponible
         subgrid_W_mecanica = ctk.CTkFrame(grid_botones)
-        subgrid_W_mecanica.grid(row=4, column=0, padx=7, pady=7, sticky="nsew")
+        subgrid_W_mecanica.grid(row=5, column=0, padx=7, pady=7, sticky="nsew")
         self.label_W_mecanica = ctk.CTkLabel(subgrid_W_mecanica, text="Potencia Mecánica [W]: 00000.00", font=("Helvetica", 20), width=350, anchor='w')
         self.label_W_mecanica.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
 
         # Texto y entrada para el rendimiento
         subgrid_rend = ctk.CTkFrame(grid_botones)
-        subgrid_rend.grid(row=5, column=0, padx=7, pady=7, sticky="nsew")
+        subgrid_rend.grid(row=6, column=0, padx=7, pady=7, sticky="nsew")
         self.label_rend = ctk.CTkLabel(subgrid_rend, text="Rendimiento [%]: 000.00", font=("Helvetica", 20), width=250, anchor='w')
         self.label_rend.grid(row=0, column=0, padx=0, pady=0, sticky="ns")
+
+        image = Image.open("Logo.png")
+        self.ruta_logo = ctk.CTkImage(light_image = image, size=(image.width/1.2, image.height/1.2))
+        self.logo = ctk.CTkLabel(grid_botones, image=self.ruta_logo, text="")
+        self.logo.grid(row=0, column=0, padx=5, pady=10, sticky='s')
 
     ## CREACION DE BOTONES INICIO ##
         self.b_abrir_conf = ctk.CTkButton(self, text="Añadir Ventilador", command=self.open_toplevel, height=50)
@@ -279,13 +292,25 @@ class Interfaz(ctk.CTk):
         grid_config.grid(row=0, column=3, rowspan=3, pady=10, sticky="nsew")
 
         # Configurar el grid
-        grid_config.grid_columnconfigure(0, weight=1)
-        grid_config.grid_columnconfigure(1, weight=1)
-        grid_config.grid_columnconfigure(2, weight=1)
-        grid_config.grid_rowconfigure(0, weight=1)
-        grid_config.grid_rowconfigure(1, weight=0)
+        grid_config.grid_columnconfigure(0, weight=0)
+        grid_config.grid_columnconfigure(1, weight=0)
+        grid_config.grid_columnconfigure(2, weight=0)
+        grid_config.grid_rowconfigure(0, weight=0)
+        grid_config.grid_rowconfigure(1, weight=1)
+        grid_config.grid_rowconfigure(2, weight=0)
+
+        modelo = tk.StringVar()
+        modelo.trace_add('write', self.on_entry_change)
+        self.filtro_modelo = ctk.CTkEntry(grid_config, placeholder_text="Modelo...", height=5, textvariable=modelo)
+        self.filtro_modelo.grid(row=0, column=1, columnspan=2, padx=5, pady=5, sticky='nwse')
+
+        self.marca = self.vector_marcas[0]
+        self.filtro_marca = ctk.CTkOptionMenu(grid_config, values=self.vector_marcas, command=self.f_filtro_marca)
+        self.filtro_marca.grid(row=0, column=0, padx=5, pady=5, sticky='nwse')
+        self.f_filtro_marca(self.vector_marcas[0])
 
         # Crear el Treeview
+        self.matriz_vent_filtro = self.matriz_vent
         self.tree = ttk.Treeview(grid_config, columns=("col1", "col2"), show="headings")
         self.tree.heading("col1", text="BRAND", anchor=tk.W)
         self.tree.heading("col2", text="MODEL", anchor=tk.W)
@@ -293,26 +318,26 @@ class Interfaz(ctk.CTk):
         self.tree.column("col2", width=200)
 
         # Añadir elementos a la tabla
-        for vent in self.matriz_vent:
+        for vent in self.matriz_vent_filtro:
             self.tree.insert("", tk.END, values=(vent[0], vent[1]))
 
         # Empaquetar el Treeview
-        self.tree.grid(row=0, column=0, columnspan=3, pady=0, padx=0, sticky='wsne')
+        self.tree.grid(row=1, column=0, columnspan=3, pady=0, padx=0, sticky='wsne')
 
         # Asociar la función de selección al evento de clic
         self.tree.bind("<<TreeviewSelect>>", self.on_select_tree)
 
         # Boton Actualizar
         self.b_actualizar = ctk.CTkButton(grid_config, text="Actualizar", command=self.actualizar_copia_database, height=40, width=60)
-        self.b_actualizar.grid(row=1, column=0, padx=5, pady=5, sticky="wsne")
+        self.b_actualizar.grid(row=2, column=0, padx=5, pady=5, sticky="wsne")
 
         # Boton editar
         self.b_edit = ctk.CTkButton(grid_config, text="Editar", command=self.edit, height=40, width=60)
-        self.b_edit.grid(row=1, column=1, padx=5, pady=5, sticky="wsne")
+        self.b_edit.grid(row=2, column=1, padx=5, pady=5, sticky="wsne")
 
         # Boton pdf
         self.b_pdf = ctk.CTkButton(grid_config, text="Abrir PDF",command=self.abrir_pdf, height=40, width=60)
-        self.b_pdf.grid(row=1, column=2, padx=5, pady=5, sticky="wsne")
+        self.b_pdf.grid(row=2, column=2, padx=5, pady=5, sticky="wsne")
 
     ## PARTE DERECHA DE CONFIG ACABAR ##
 
@@ -539,12 +564,15 @@ class Interfaz(ctk.CTk):
     def close(self):
         quit()
 
-    def actualizar_copia_database(self):
+    def actualizar_tree(self):
         for item in self.tree.get_children():
             self.tree.delete(item)
-        self.matriz_vent = f_database.copia_database()
-        for vent in self.matriz_vent:
+        for vent in self.matriz_vent_filtro:
             self.tree.insert("", tk.END, values=(vent[0], vent[1]))  
+
+    def actualizar_copia_database(self):
+        self.matriz_vent, self.vector_marcas = f_database.copia_database()
+        self.f_filtro_marca(self.marca)
         messagebox.showinfo("Actualizada", "Base de datos actualizada")
 
     def abrir_pdf(self):
@@ -556,10 +584,46 @@ class Interfaz(ctk.CTk):
         # Indice de la fila seleccionada
         index = self.tree.index(selected_item)
         # El ventilador seleccionado se pasa a la funcion de actualizar
-        self.vent = self.matriz_vent[index]
+        self.vent = self.matriz_vent_filtro[index]
         app.actualizar_graficas(self.vent)
         evento_simulado = f_database.EventoSimulado(xdata= self.vent[2][1][0]/2, ydata=self.vent[2][1][1]/2)
         app.on_move(evento_simulado, mode=1)
+
+    def f_filtro_marca(self, marca):
+        # Si se selecciona la primera opccion "todos", se cargan todos los vents
+        self.marca = marca
+        if self.marca == self.vector_marcas[0]:
+            self.matriz_vent_filtro_marca = self.matriz_vent
+        
+        else:
+            self.matriz_vent_filtro_marca = []
+            for ventilador in self.matriz_vent:
+                if ventilador[0] == self.marca:
+                    self.matriz_vent_filtro_marca.append(ventilador)
+        
+        self.on_entry_change()
+        return
+    
+    def on_entry_change(self, *args):
+        modelo = self.filtro_modelo.get()
+
+        try:
+            if modelo != "":
+                matriz_vent_modelo = []
+                for ventilador in self.matriz_vent_filtro_marca:
+                    if ventilador[1][0:len(modelo)] == modelo:
+                        matriz_vent_modelo.append(ventilador)
+                        
+                self.matriz_vent_filtro = matriz_vent_modelo
+
+            else: self.matriz_vent_filtro = self.matriz_vent_filtro_marca
+
+            self.actualizar_tree()
+            return
+        
+        except:
+            return
+
 ## INTERFAZ ACABAR ##
 
 if __name__ == "__main__":

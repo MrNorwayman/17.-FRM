@@ -1,11 +1,24 @@
 import tkinter as tk
-from tkinter import filedialog
+from PIL import Image, ImageTk
 
-# Crear una ventana raíz oculta
+# Crear la ventana principal
 root = tk.Tk()
-root.withdraw()
 
-# Abrir el cuadro de diálogo para seleccionar un archivo
-ruta_archivo = filedialog.askopenfilename()
+# Cargar y redimensionar la imagen
+image_path = "Logo.PNG"
+image = Image.open(image_path)
+image = image.resize((512, 512), Image.LANCZOS)
 
-print(f'Archivo seleccionado: {ruta_archivo}')
+# Guardar la imagen redimensionada como .ico
+image.save("Carrier_anti.png")
+
+# Establecer el icono de la ventana
+root.iconbitmap("Carrier_anti.png")
+
+# Crear un widget de etiqueta para mostrar la imagen (opcional)
+photo = ImageTk.PhotoImage(image)
+label = tk.Label(root, image=photo)
+label.pack(pady=20)
+
+# Ejecutar el bucle principal
+root.mainloop()
