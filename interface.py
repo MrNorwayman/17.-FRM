@@ -363,18 +363,18 @@ class Interfaz(ctk.CTk):
         self.label_rend_UE.grid(row=0, column=0, padx=5, pady=0, sticky="ns")
         row_grid_botones = row_grid_botones+1
 
-        # Texto para la correccion UE
-        subgrid_correc_UE = ctk.CTkFrame(grid_botones)
-        subgrid_correc_UE.grid(row=row_grid_botones, column=0, padx=7, pady=2, sticky="nsew")
-        self.label_correc_UE = ctk.CTkLabel(subgrid_correc_UE, text="Corrección UE [W]: 000.00", font=("Helvetica", 20), width=250, anchor='w')
-        self.label_correc_UE.grid(row=0, column=0, padx=5, pady=0, sticky="ns")
-        row_grid_botones = row_grid_botones+1
-
         # Texto para el rendimiento
         subgrid_rend = ctk.CTkFrame(grid_botones)
         subgrid_rend.grid(row=row_grid_botones, column=0, padx=7, pady=2, sticky="nsew")
         self.label_rend = ctk.CTkLabel(subgrid_rend, text="Rendimiento [%]: 000.00", font=("Helvetica", 20), width=250, anchor='w')
         self.label_rend.grid(row=0, column=0, padx=5, pady=0, sticky="ns")
+        row_grid_botones = row_grid_botones+1
+
+        # Texto para la correccion UE
+        subgrid_correc_UE = ctk.CTkFrame(grid_botones, fg_color=color_potencias)
+        subgrid_correc_UE.grid(row=row_grid_botones, column=0, padx=7, pady=2, sticky="nsew")
+        self.label_correc_UE = ctk.CTkLabel(subgrid_correc_UE, text="Corrección UE [W]: 000.00", font=("Helvetica", 20), width=250, anchor='w')
+        self.label_correc_UE.grid(row=0, column=0, padx=5, pady=0, sticky="ns")
         row_grid_botones = row_grid_botones+1
 
         # Texto para la potencia consumida
