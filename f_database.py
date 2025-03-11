@@ -31,7 +31,7 @@ class EventoSimulado:
 
 def add_vent(vent):
     # Nueva linea de ventilador
-    text_ventilador = ('\nVENT;'+vent[0]+';'+vent[1]+';'+str(vent[2])+"\n")
+    text_ventilador = ('VENT;'+vent[0]+';'+vent[1]+';'+str(vent[2])+';'+vent[3]+';'+vent[4]+';'+vent[5]+";\n")
 
     content = read_text_file()  # Lineas database
     ventiladores = []   # Se acumulan todas las lineas de ventiladores para ordenar a posterior
@@ -83,7 +83,7 @@ def edit_vent(vent, edit_vent):
         if line[0:4] == 'VENT':
             vent_db = line.split(';')
             if vent_db[1]==edit_vent[0] and vent_db[2]==edit_vent[1]:
-                line = ('VENT;'+vent[0]+';'+vent[1]+';'+str(vent[2])+'\n')
+                    line = ('VENT;'+vent[0]+';'+vent[1]+';'+str(vent[2])+';'+vent[3]+';'+vent[4]+';'+vent[5]+";\n")
         content.append(line)
             
     with open('database.txt', 'w') as file:
